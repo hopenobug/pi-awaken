@@ -1,0 +1,51 @@
+{
+  "name": "pi-awaken",
+  "version": "0.1.0",
+  "description": "Pi extension: run long shell scripts in the background and get woken when they finish, match output, or anything calls pi-wake.",
+  "type": "module",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "background-jobs",
+    "wake",
+    "herdr"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/umbra2728/pi-awaken.git"
+  },
+  "homepage": "https://github.com/umbra2728/pi-awaken#readme",
+  "files": [
+    "index.ts",
+    "store.ts",
+    "bin/pi-wake.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "pi-wake": "bin/pi-wake.mjs"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "scripts": {
+    "test": "node --experimental-transform-types --no-warnings --test store.test.ts",
+    "typecheck": "tsc -p ."
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "^1.1.0",
+    "@earendil-works/pi-coding-agent": "^1.1.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
