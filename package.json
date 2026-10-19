@@ -1,6 +1,6 @@
 {
   "name": "pi-awaken",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Pi extension: run long shell scripts in the background and get woken when they finish, match output, or anything calls pi-wake.",
   "type": "module",
   "keywords": [
