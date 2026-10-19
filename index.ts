@@ -22,7 +22,7 @@ const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
 
 function installCli() {
   const target = join(agentBin(), "pi-wake");
-  const shim = `#!/bin/sh\nexec node "${cliPath}" "$@"\n`;
+  const shim = `#!/bin/sh\nexec "${process.execPath}" "${cliPath}" "$@"\n`;
   try {
     if (existsSync(target) && readFileSync(target, "utf8") === shim) return;
     mkdirSync(agentBin(), { recursive: true });
@@ -101,21 +101,23 @@ export default function (pi: ExtensionAPI) {
     const s = store;
     const items = queue.splice(0);
     if (!s || !items.length) return;
-    const body = items.map(renderWake).join("\n\n");
-    const title = items.length > 1 ? `[pi-wake] ${items.length} background events` : "[pi-wake]";
+    const fresh = items.filter((item) => item.kind !== "exit" || !s.get(item.job.id)?.delivered);
+    for (const item of items) queued.delete(item.key);
+    if (!fresh.length) return;
+    const body = fresh.map(renderWake).join("\n\n");
+    const title = fresh.length > 1 ? `[pi-wake] ${fresh.length} background events` : "[pi-wake]";
     pi.sendMessage(
       {
         customType: "pi-wake",
         content: `${title}\n${body}`,
         display: true,
-        details: { events: items.map((item) => item.key) },
+        details: { events: fresh.map((item) => item.key) },
       },
       { triggerTurn: true, deliverAs: "steer" },
     );
-    for (const item of items) {
+    for (const item of fresh) {
       if (item.kind === "exit") s.markDelivered(item.job.id);
       if (item.kind === "message") s.consume(item.message.file);
-      queued.delete(item.key);
     }
   }
 
@@ -245,8 +247,13 @@ export default function (pi: ExtensionAPI) {
           PATH: [agentBin(), process.env.PATH ?? ""].join(delimiter),
         },
       });
-      const early = await waitForExit(s, job.id, INLINE_WINDOW_MS, signal);
-      if (early) return finishedResult(s, early);
+      busy.add(job.id);
+      try {
+        const early = await waitForExit(s, job.id, INLINE_WINDOW_MS, signal);
+        if (early) return finishedResult(s, early);
+      } finally {
+        busy.delete(job.id);
+      }
       tick();
       const text = [
         `Started ${header(job)} in the background (pid ${job.pid}).`,
