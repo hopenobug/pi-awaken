@@ -93,8 +93,17 @@ export default function (pi: ExtensionAPI) {
     if (queued.has(wake.key)) return;
     queued.add(wake.key);
     queue.push(wake);
-    flushTimer ??= setTimeout(flush, FLUSH_MS);
+    flushTimer ??= setTimeout(() => guarded(flush), FLUSH_MS);
   };
+
+  function guarded(fn: () => void) {
+    try {
+      fn();
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("ctx is stale")) shutdown();
+      else throw error;
+    }
+  }
 
   function flush() {
     flushTimer = undefined;
@@ -188,7 +197,7 @@ export default function (pi: ExtensionAPI) {
     store.ensure();
     JobStore.prune();
     installCli();
-    pollTimer = setInterval(tick, POLL_MS);
+    pollTimer = setInterval(() => guarded(tick), POLL_MS);
     pollTimer.unref?.();
     tick();
   });
